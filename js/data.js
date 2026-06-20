@@ -291,9 +291,5 @@ const genresData = [
   { name: "Biography", color: "#4f6e63", count: 1 }
 ];
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { booksData, genresData };
-} else {
-  window.booksData = booksData;
-  window.genresData = genresData;
-}
+window.booksData = booksData;
+window.genresData = genresData;
