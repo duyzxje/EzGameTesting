@@ -98,6 +98,12 @@ function setupGlobalListeners() {
       updateAuthHeaderUI();
       closeModal();
       signinForm.reset();
+      
+      if (appState.redirectAfterAuth) {
+        const redirectTarget = appState.redirectAfterAuth;
+        appState.redirectAfterAuth = null;
+        navigateTo(redirectTarget);
+      }
     });
   }
 
@@ -152,6 +158,8 @@ function handleRoute() {
     renderShop(mainContent, hash);
   } else if (hash.startsWith('#bag')) {
     renderBagPage(mainContent);
+  } else if (hash.startsWith('#checkout')) {
+    renderCheckoutPage(mainContent);
   } else if (hash.startsWith('#book-')) {
     const id = parseInt(hash.replace('#book-', ''));
     renderBookDetail(mainContent, id);
@@ -478,7 +486,12 @@ function renderBagPage(container) {
 window.renderBagPage = renderBagPage;
 
 function processCheckout(subtotal) {
-  openModal();
+  if (appState.user) {
+    navigateTo('#checkout');
+  } else {
+    appState.redirectAfterAuth = '#checkout';
+    openModal();
+  }
 }
 window.processCheckout = processCheckout;
 
@@ -702,3 +715,73 @@ function logoutUser() {
   }
 }
 window.logoutUser = logoutUser;
+
+function renderCheckoutPage(container) {
+  if (appState.cart.length === 0) {
+    navigateTo('#home');
+    return;
+  }
+  
+  if (!appState.user) {
+    appState.redirectAfterAuth = '#checkout';
+    navigateTo('#bag');
+    openModal();
+    return;
+  }
+  
+  const cartItems = appState.cart.map(item => {
+    const book = window.booksData.find(b => b.id === item.bookId);
+    return { book, quantity: item.quantity };
+  }).filter(item => item.book !== undefined);
+  
+  container.innerHTML = window.components.createCheckoutPageView(cartItems, appState.user);
+}
+window.renderCheckoutPage = renderCheckoutPage;
+
+function selectPaymentMethod(method) {
+  document.querySelectorAll('.payment-method-option').forEach(opt => opt.classList.remove('active'));
+  const activeOpt = document.getElementById(`payment-opt-${method}`);
+  if (activeOpt) activeOpt.classList.add('active');
+  
+  const radio = document.getElementById(`payment-${method}`);
+  if (radio) radio.checked = true;
+  
+  const cardFields = document.getElementById('card-fields');
+  if (cardFields) {
+    if (method === 'card') {
+      cardFields.style.display = 'flex';
+      cardFields.querySelectorAll('input').forEach(inp => inp.setAttribute('required', 'true'));
+    } else {
+      cardFields.style.display = 'none';
+      cardFields.querySelectorAll('input').forEach(inp => inp.removeAttribute('required'));
+    }
+  }
+}
+window.selectPaymentMethod = selectPaymentMethod;
+
+function submitOrder(event) {
+  event.preventDefault();
+  
+  const orderDetails = {
+    orderId: 'PC-' + Math.floor(100000 + Math.random() * 900000),
+    name: document.getElementById('shipping-name').value,
+    email: document.getElementById('shipping-email').value,
+    phone: document.getElementById('shipping-phone').value,
+    address: document.getElementById('shipping-address').value,
+    paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
+    total: appState.cart.reduce((sum, item) => {
+      const book = window.booksData.find(b => b.id === item.bookId);
+      return sum + (book ? book.price * item.quantity : 0);
+    }, 0)
+  };
+  
+  // Xóa giỏ hàng
+  appState.cart = [];
+  saveCart();
+  updateCartUI();
+  
+  // Render màn hình thành công
+  const mainContent = document.getElementById('main-content');
+  mainContent.innerHTML = window.components.createOrderSuccessView(orderDetails);
+}
+window.submitOrder = submitOrder;
