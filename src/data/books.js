@@ -1,4 +1,4 @@
-const booksData = [
+export const booksData = [
   {
     id: 1,
     title: "The Lighthouse Keeper",
@@ -281,7 +281,7 @@ const booksData = [
   }
 ];
 
-const genresData = [
+export const genresData = [
   { name: "Fiction", color: "#8a4f3e", count: 3 },
   { name: "Mystery", color: "#5c7294", count: 3 },
   { name: "Sci-Fi", color: "#568285", count: 3 },
@@ -291,5 +291,3 @@ const genresData = [
   { name: "Biography", color: "#4f6e63", count: 1 }
 ];
 
-window.booksData = booksData;
-window.genresData = genresData;
